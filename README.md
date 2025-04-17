@@ -18,7 +18,7 @@ For the exchange(s) you'd like to use, just copy the files for your brokerage an
 with your credentials.
 
 #### E*Trade
-`$> cp ${FIANCHETTO_HOME}/config/etrade_config.example.ini ${FIANCHETTO_HOME}/config/etrade_config.ini`
+```$> cp ${FIANCHETTO_HOME}/config/etrade_config.example.ini ${FIANCHETTO_HOME}/config/etrade_config.ini```
 
 You'll need your API keys. If you don't have them, you can get them [here](https://us.etrade.com/etx/ris/apikey).
 

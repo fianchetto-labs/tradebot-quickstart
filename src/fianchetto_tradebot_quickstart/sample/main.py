@@ -4,8 +4,8 @@ from enum import Enum
 
 import requests
 from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
-from fianchetto_tradebot.oex.oex_service import OexService
-
+from fianchetto_tradebot.oex.serving.oex_rest_service import OexRestService
+from fianchetto_tradebot.quotes.serving.quotes_rest_service import QuotesRestService
 
 from runnable_service import RunnableService
 from concurrent.futures import ThreadPoolExecutor
@@ -47,16 +47,24 @@ def start_all_services():
     }
 
     invoke_oex_service(credential_dict, ports_dict[ServiceKey.OEX])
+    invoke_quotes_service(credential_dict, ports_dict[ServiceKey.QUOTES])
     # TODO: Add the rest of the services
 
     print("Up & Running!")
 
-def invoke_oex_service(credential_dict: dict[ExchangeName, str], port=8080):
-    oex_service = OexService(credential_config_files=credential_dict)
-    r = RunnableService(port, oex_service)
+def invoke_quotes_service(credential_dict: dict[ExchangeName, str], port=8081):
+    quotes_service = QuotesRestService(credential_config_files=credential_dict)
+    quotes_runnable = RunnableService(port, quotes_service)
 
-    services.append(r)
-    executor.submit(r)
+    services.append(quotes_runnable)
+    executor.submit(quotes_runnable)
+
+def invoke_oex_service(credential_dict: dict[ExchangeName, str], port=8080):
+    oex_service = OexRestService(credential_config_files=credential_dict)
+    oex_runnable = RunnableService(port, oex_service)
+
+    services.append(oex_runnable)
+    executor.submit(oex_runnable)
 
 def get_orders():
     config.read(ACCOUNTS_CONFIGURATION_FILE)

@@ -3,9 +3,9 @@ import os
 from enum import Enum
 
 import requests
-from fianchetto_tradebot.common.exchange.exchange_name import ExchangeName
-from fianchetto_tradebot.oex.serving.oex_rest_service import OexRestService
-from fianchetto_tradebot.quotes.serving.quotes_rest_service import QuotesRestService
+from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.server.orders.serving.orders_rest_service import OrdersRestService
+from fianchetto_tradebot.server.quotes.serving.quotes_rest_service import QuotesRestService
 
 from runnable_service import RunnableService
 from concurrent.futures import ThreadPoolExecutor
@@ -26,16 +26,17 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 class ServiceKey(Enum):
     OEX = "oex"
+    MOEX = "moex"
     QUOTES = "quotes"
     TRIDENT = "trident"
     HELM = "helm"
 
 def start_all_services():
     # Get all configurations
-    credential_dict: dict[ExchangeName, str] = {
-        ExchangeName.ETRADE : ETRADE_CONFIGURATION_FILE,
-        ExchangeName.SCHWAB : SCHWAB_CONFIGURATION_FILE,
-        ExchangeName.IKBR : IKBR_CONFIGURATION_FILE
+    credential_dict: dict[Brokerage, str] = {
+        Brokerage.ETRADE : ETRADE_CONFIGURATION_FILE,
+        Brokerage.SCHWAB : SCHWAB_CONFIGURATION_FILE,
+        Brokerage.IKBR : IKBR_CONFIGURATION_FILE
     }
 
     config.read(SERVICE_CONFIGURATION_FILE)
@@ -44,6 +45,7 @@ def start_all_services():
         ServiceKey.QUOTES : config.getint('PORTS', 'QUOTES_SERVICE_PORT'),
         ServiceKey.TRIDENT :config.getint('PORTS', 'TRIDENT_SERVICE_PORT'),
         ServiceKey.HELM : config.getint('PORTS', 'HELM_SERVICE_PORT'),
+        ServiceKey.MOEX : config.getint('PORTS', 'MOEX_SERVICE_PORT')
     }
 
     invoke_oex_service(credential_dict, ports_dict[ServiceKey.OEX])
@@ -52,15 +54,15 @@ def start_all_services():
 
     print("Up & Running!")
 
-def invoke_quotes_service(credential_dict: dict[ExchangeName, str], port=8081):
+def invoke_quotes_service(credential_dict: dict[Brokerage, str], port=8081):
     quotes_service = QuotesRestService(credential_config_files=credential_dict)
     quotes_runnable = RunnableService(port, quotes_service)
 
     services.append(quotes_runnable)
     executor.submit(quotes_runnable)
 
-def invoke_oex_service(credential_dict: dict[ExchangeName, str], port=8080):
-    oex_service = OexRestService(credential_config_files=credential_dict)
+def invoke_oex_service(credential_dict: dict[Brokerage, str], port=8080):
+    oex_service = OrdersRestService(credential_config_files=credential_dict)
     oex_runnable = RunnableService(port, oex_service)
 
     services.append(oex_runnable)
@@ -68,18 +70,18 @@ def invoke_oex_service(credential_dict: dict[ExchangeName, str], port=8080):
 
 def get_orders():
     config.read(ACCOUNTS_CONFIGURATION_FILE)
-    accounts_dict: dict[ExchangeName, str] = {
-        ExchangeName.ETRADE : config.get('ETRADE', ACCOUNT_ID_KEY, fallback=None),
-        ExchangeName.IKBR : config.get('IKBR', ACCOUNT_KEY, fallback=None),
-        ExchangeName.SCHWAB : config.get('SCHWAB', ACCOUNT_KEY, fallback=None)
+    accounts_dict: dict[Brokerage, str] = {
+        Brokerage.ETRADE : config.get('ETRADE', ACCOUNT_ID_KEY, fallback=None),
+        Brokerage.IKBR : config.get('IKBR', ACCOUNT_KEY, fallback=None),
+        Brokerage.SCHWAB : config.get('SCHWAB', ACCOUNT_KEY, fallback=None)
     }
 
-    e_trade_account_id = accounts_dict[ExchangeName.ETRADE]
+    e_trade_account_id = accounts_dict[Brokerage.ETRADE]
 
-    print(f'Hi, we\'re going list orders for {ExchangeName.ETRADE}')  # Press ⌘F8 to toggle the breakpoint.
+    print(f'Hi, we\'re going list orders for {Brokerage.ETRADE}')  # Press ⌘F8 to toggle the breakpoint.
     host='0.0.0.0'
     port=8080
-    response = requests.get(f"http://{host}:{port}/api/v1/{ExchangeName.ETRADE.value}/{e_trade_account_id}/orders")
+    response = requests.get(f"http://{host}:{port}/api/v1/{Brokerage.ETRADE.value}/{e_trade_account_id}/orders")
 
     print(response)
 

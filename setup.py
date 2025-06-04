@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='fianchetto-tradebot-quickstart',
-    version='0.0.3',
+    version='0.0.4',
     author='Fianchetto Labs',
     author_email='aleks@fianchettolabs.com',
     description='Example of using the Fianchetto Tradebot Library interacting with brokerages',

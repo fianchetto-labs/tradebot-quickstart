@@ -41,7 +41,7 @@ def start_all_services():
 
     config.read(SERVICE_CONFIGURATION_FILE)
     ports_dict: dict[ServiceKey, int] = {
-        ServiceKey.OEX : config.getint('PORTS', 'OEX_SERVICE_PORT'),
+        ServiceKey.OEX : config.getint('PORTS', 'ORDERS_SERVICE_PORT'),
         ServiceKey.QUOTES : config.getint('PORTS', 'QUOTES_SERVICE_PORT'),
         ServiceKey.TRIDENT :config.getint('PORTS', 'TRIDENT_SERVICE_PORT'),
         ServiceKey.HELM : config.getint('PORTS', 'HELM_SERVICE_PORT'),

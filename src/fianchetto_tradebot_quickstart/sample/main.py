@@ -1,9 +1,11 @@
 import configparser
 import os
 from enum import Enum
+from time import sleep
 
 import requests
 from fianchetto_tradebot.common_models.brokerage.brokerage import Brokerage
+from fianchetto_tradebot.server.moex.serving.moex_rest_service import MoexRestService
 from fianchetto_tradebot.server.orders.serving.orders_rest_service import OrdersRestService
 from fianchetto_tradebot.server.quotes.serving.quotes_rest_service import QuotesRestService
 
@@ -25,9 +27,9 @@ services: list[RunnableService] = []
 executor = ThreadPoolExecutor(max_workers=10)
 
 class ServiceKey(Enum):
-    OEX = "oex"
-    MOEX = "moex"
+    ORDERS = "orders"
     QUOTES = "quotes"
+    MOEX = "moex"
     TRIDENT = "trident"
     HELM = "helm"
 
@@ -41,18 +43,24 @@ def start_all_services():
 
     config.read(SERVICE_CONFIGURATION_FILE)
     ports_dict: dict[ServiceKey, int] = {
-        ServiceKey.OEX : config.getint('PORTS', 'ORDERS_SERVICE_PORT'),
+        ServiceKey.ORDERS : config.getint('PORTS', 'ORDERS_SERVICE_PORT'),
         ServiceKey.QUOTES : config.getint('PORTS', 'QUOTES_SERVICE_PORT'),
         ServiceKey.TRIDENT :config.getint('PORTS', 'TRIDENT_SERVICE_PORT'),
         ServiceKey.HELM : config.getint('PORTS', 'HELM_SERVICE_PORT'),
         ServiceKey.MOEX : config.getint('PORTS', 'MOEX_SERVICE_PORT')
     }
-
-    invoke_oex_service(credential_dict, ports_dict[ServiceKey.OEX])
+    invoke_orders_service(credential_dict, ports_dict[ServiceKey.ORDERS])
     invoke_quotes_service(credential_dict, ports_dict[ServiceKey.QUOTES])
-    # TODO: Add the rest of the services
+    invoke_moex_service(credential_dict, ports_dict[ServiceKey.MOEX])# TODO: Add the rest of the services
 
     print("Up & Running!")
+
+def invoke_orders_service(credential_dict: dict[Brokerage, str], port=8080):
+    orders_service = OrdersRestService(credential_config_files=credential_dict)
+    orders_runnable = RunnableService(port, orders_service)
+
+    services.append(orders_runnable)
+    executor.submit(orders_runnable)
 
 def invoke_quotes_service(credential_dict: dict[Brokerage, str], port=8081):
     quotes_service = QuotesRestService(credential_config_files=credential_dict)
@@ -61,12 +69,12 @@ def invoke_quotes_service(credential_dict: dict[Brokerage, str], port=8081):
     services.append(quotes_runnable)
     executor.submit(quotes_runnable)
 
-def invoke_oex_service(credential_dict: dict[Brokerage, str], port=8080):
-    oex_service = OrdersRestService(credential_config_files=credential_dict)
-    oex_runnable = RunnableService(port, oex_service)
+def invoke_moex_service(credential_dict: dict[Brokerage, str], port=8082):
+    moex_service = MoexRestService(credential_config_files=credential_dict)
+    moex_runnable = RunnableService(port, moex_service)
 
-    services.append(oex_runnable)
-    executor.submit(oex_runnable)
+    services.append(moex_runnable)
+    executor.submit(moex_runnable)
 
 def get_orders():
     config.read(ACCOUNTS_CONFIGURATION_FILE)
@@ -81,11 +89,14 @@ def get_orders():
     print(f'Hi, we\'re going list orders for {Brokerage.ETRADE}')  # Press ⌘F8 to toggle the breakpoint.
     host='0.0.0.0'
     port=8080
-    response = requests.get(f"http://{host}:{port}/api/v1/{Brokerage.ETRADE.value}/{e_trade_account_id}/orders")
+    uri = f"http://localhost:{port}/api/v1/{Brokerage.ETRADE.value}/accounts/{e_trade_account_id}/orders"
+    print(uri)
+    response = requests.get(uri)
 
     print(response)
 
 
 if __name__ == '__main__':
     start_all_services()
+    sleep(5)
     get_orders()

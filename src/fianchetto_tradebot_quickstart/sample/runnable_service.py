@@ -4,4 +4,4 @@ class RunnableService:
         self.service = service
 
     def __call__(self, *args, **kwargs):
-        self.service.run(host='0.0.0.0',port=self.port)
+        self.service.run(host='0.0.0.0', port=self.port)
